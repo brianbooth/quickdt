@@ -36,11 +36,7 @@ public final class TreeBuilder {
 	}
 
 
-	private double[] createOrdinalSplit(final Iterable<Instance> trainingData, final String attribute) {
-		final ReservoirSampler<Double> rs = new ReservoirSampler<Double>(1000);
-		for (final Instance i : trainingData) {
-			rs.addSample(((Number) i.attributes.get(attribute)).doubleValue());
-		}
+	private double[] createOrdinalSplit(final ReservoirSampler<Double> rs) {
 		final ArrayList<Double> al = Lists.newArrayList();
 		for (final Double d : rs.getSamples()) {
 			al.add(d);
@@ -48,6 +44,7 @@ public final class TreeBuilder {
 		Collections.sort(al);
 
 		final double[] split = new double[ORDINAL_TEST_SPLITS - 1];
+
 		for (int x = 0; x < split.length; x++) {
 			split[x] = al.get((x + 1) * al.size() / (split.length + 1));
 		}
@@ -55,6 +52,18 @@ public final class TreeBuilder {
 		return split;
 	}
 
+	private double[] createOrdinalSplit(final Iterable<Instance> trainingData, final String attribute) {
+		final ReservoirSampler<Double> rs = new ReservoirSampler<Double>(1000);
+		for (final Instance i : trainingData) {
+			rs.addSample(((Number) i.attributes.get(attribute)).doubleValue());
+		}
+		
+		final double[] split = createOrdinalSplit(rs);
+		
+		return split;
+	}
+
+	
 	private Map<String, double[]> createOrdinalSplits(final Iterable<Instance> trainingData) {
 		final Map<String, ReservoirSampler<Double>> rsm = Maps.newHashMap();
 		for (final Instance i : trainingData) {
@@ -73,19 +82,10 @@ public final class TreeBuilder {
 		final Map<String, double[]> splits = Maps.newHashMap();
 
 		for (final Entry<String, ReservoirSampler<Double>> e : rsm.entrySet()) {
-			final ArrayList<Double> al = Lists.newArrayList();
-			for (final Double d : e.getValue().getSamples()) {
-				al.add(d);
-			}
-			Collections.sort(al);
-
-			final double[] split = new double[ORDINAL_TEST_SPLITS - 1];
-			for (int x = 0; x < split.length; x++) {
-				split[x] = al.get((x + 1) * al.size() / (split.length + 2));
-			}
-
+			final double[] split = createOrdinalSplit(e.getValue());
 			splits.put(e.getKey(), split);
 		}
+		
 		return splits;
 	}
 
