@@ -9,10 +9,7 @@ public class Instance {
 	}
 
 	public static Instance create(final String classification, final Serializable... inputs) {
-		final Attributes a = new Attributes();
-		for (int x = 0; x < inputs.length; x += 2) {
-			a.put((String) inputs[x], inputs[x + 1]);
-		}
+		final Attributes a = Attributes.create(inputs);
 		return new Instance(a, classification);
 	}
 
