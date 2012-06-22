@@ -89,8 +89,30 @@ public final class TreeBuilder {
 		return splits;
 	}
 
+	private String[] limitedFisherYatesShuffle(final String[] sa, final int itemCount) {
+		final Random rand = new Random();
+		
+		// limited amount of uniformly shuffled items 
+		final String[] lsa = new String[itemCount];
+		
+		final int n = sa.length;
+		for (int i=0;i<n-1;i++) {
+			if (i>=itemCount) break;
+
+			int j = i+rand.nextInt(n-i);
+			lsa[i]=sa[j];
+			sa[j]=sa[i];
+		}
+		return lsa;
+	}
+	
 	protected Node buildTree(final Iterable<Instance> trainingData, final int depth, final int maxDepth,
 			final double minProbability, final Map<String, double[]> splits) {
+		return buildTree(trainingData, depth, maxDepth, minProbability, splits, false);
+	}
+	
+	protected Node buildTree(final Iterable<Instance> trainingData, final int depth, final int maxDepth,
+			final double minProbability, final Map<String, double[]> splits, boolean forestMode) {
 		final Leaf thisLeaf = new Leaf(trainingData, depth);
 		if (depth == maxDepth || thisLeaf.probability >= minProbability)
 			return thisLeaf;
@@ -109,7 +131,39 @@ public final class TreeBuilder {
 
 		Branch bestNode = null;
 		double bestScore = 0;
-		for (final Entry<String, Serializable> e : sampleInstance.attributes.entrySet()) {
+		
+		Set<Entry<String, Serializable>> attributeSet  = null;
+		
+		if (forestMode) {
+			final int M = sampleInstance.attributes.size();
+
+			// Need a better way to do this.  m should be much less than M.
+			int m=M/3;
+			if (m<30) m=Math.min(10, m);
+			
+			String[] sa = new String[M];
+			
+			sampleInstance.attributes.keySet().toArray(sa);
+			
+			// select m of the M number of attributes
+			
+			String[] lsa = limitedFisherYatesShuffle(sa, m);
+
+			Map<String, Serializable> selectedAttributes = new HashMap<String, Serializable>();
+			for (String attr : lsa) {
+				String key = attr;
+				Serializable value = sampleInstance.attributes.get(attr);
+				selectedAttributes.put(key, value);
+			}
+			attributeSet = selectedAttributes.entrySet();
+		} else {
+			// All attributes available
+			attributeSet = sampleInstance.attributes.entrySet();
+		}
+		
+		
+		for (final Entry<String, Serializable> e : attributeSet) {
+
 			Pair<? extends Branch, Double> thisPair = null;
 
 			if (!smallTrainingSet && e.getValue() instanceof Number) {
