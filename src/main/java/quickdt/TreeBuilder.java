@@ -18,13 +18,23 @@ public final class TreeBuilder {
 	public static final int ORDINAL_TEST_SPLITS = 5;
 
 	Scorer scorer;
-
+	boolean forestMode;
+	
 	public TreeBuilder() {
 		this(new Scorer1());
 	}
 
+	public TreeBuilder(boolean fm) {
+		this(new Scorer1(), fm);
+	}
+
 	public TreeBuilder(final Scorer scorer) {
+		this(scorer, false);
+	}
+
+	public TreeBuilder(final Scorer scorer, boolean fm) {
 		this.scorer = scorer;
+		this.forestMode = fm;
 	}
 
 	public Node buildTree(final Iterable<Instance> trainingData) {
@@ -89,6 +99,8 @@ public final class TreeBuilder {
 		return splits;
 	}
 
+	
+
 	private String[] limitedFisherYatesShuffle(final String[] sa, final int itemCount) {
 		final Random rand = new Random();
 		
@@ -108,11 +120,6 @@ public final class TreeBuilder {
 	
 	protected Node buildTree(final Iterable<Instance> trainingData, final int depth, final int maxDepth,
 			final double minProbability, final Map<String, double[]> splits) {
-		return buildTree(trainingData, depth, maxDepth, minProbability, splits, false);
-	}
-	
-	protected Node buildTree(final Iterable<Instance> trainingData, final int depth, final int maxDepth,
-			final double minProbability, final Map<String, double[]> splits, boolean forestMode) {
 		final Leaf thisLeaf = new Leaf(trainingData, depth);
 		if (depth == maxDepth || thisLeaf.probability >= minProbability)
 			return thisLeaf;
@@ -137,9 +144,8 @@ public final class TreeBuilder {
 		if (forestMode) {
 			final int M = sampleInstance.attributes.size();
 
-			// Need a better way to do this.  m should be much less than M.
-			int m=M/3;
-			if (m<30) m=Math.min(10, m);
+			// Grrrr
+			final int m = ForestBuilder.attributeSubsetCount(M);
 			
 			String[] sa = new String[M];
 			
@@ -159,6 +165,7 @@ public final class TreeBuilder {
 		} else {
 			// All attributes available
 			attributeSet = sampleInstance.attributes.entrySet();
+			//System.out.println("Use All the Attributes!");
 		}
 		
 		
@@ -180,9 +187,11 @@ public final class TreeBuilder {
 		}
 
 		// If we were unable to find a useful branch, return the leaf
-		if (bestNode == null)
+		if (bestNode == null) {
 			// Its a bad sign when this happens, normally something to debug
+			//System.err.println("Unable to find a useful branch");
 			return thisLeaf;
+		}
 
 		double[] oldSplit = null;
 
@@ -325,4 +334,5 @@ public final class TreeBuilder {
 
 		return Pair.with(new OrdinalBranch(attribute, bestThreshold), bestScore);
 	}
+
 }
