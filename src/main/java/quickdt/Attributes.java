@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 public final class Attributes extends HashMap<String, Serializable> {
 
-	private static final long serialVersionUID = 5737931426134041728L;
+	private static final long serialVersionUID = -1165915887065742633L;
 
 	public static Attributes create(final Serializable... inputs) {
 		final Attributes a = new Attributes();
@@ -15,7 +15,5 @@ public final class Attributes extends HashMap<String, Serializable> {
 		return a;
 	}
 
-	public Instance classification(final Serializable cls) {
-		return new Instance(this, cls);
-	}
+
 }
